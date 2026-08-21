@@ -4,3 +4,14 @@ orchestra/.done
 orchestra/.codex-status
 orchestra/.codex-last.md
 orchestra/.baseline
+*.iml
+.gradle/
+/local.properties
+.idea/
+.DS_Store
+/build
+/app/build
+/captures
+*.apk
+*.keystore
+!debug.keystore
