@@ -4,6 +4,7 @@ orchestra/.done
 orchestra/.codex-status
 orchestra/.codex-last.md
 orchestra/.baseline
+orchestra/.baseline-stash
 *.iml
 .gradle/
 /local.properties

@@ -1,3 +1,7 @@
 # ts	tool	model	status	in_tok	out_tok	total_tok	usd	project	slug
 2026-08-21 12:07:36	codex	gpt-5.6-sol	EXEC_DONE	-	-	239095	-	/Users/jin/Desktop/x-spam-filter-lsposed	task-research-x-spam-filter
 2026-08-21 12:22:32	codex	gpt-5.6-sol	EXEC_DONE	-	-	158131	-	/Users/jin/Desktop/x-spam-filter-lsposed	task-p1-skeleton-probe
+2026-08-21 14:29:58	codex	gpt-5.6-luna	EXEC_DONE	-	-	21640	-	/Users/jin/Desktop/x-spam-filter-lsposed	task-p2a-stacktrace-probe
+2026-08-21 15:17:42	codex	gpt-5.6-sol	EXEC_DONE	-	-	96465	-	/Users/jin/Desktop/x-spam-filter-lsposed	task-p2b-filter-implementation
+2026-08-21 15:39:09	codex	gpt-5.6-sol	EXEC_DONE	-	-	172136	-	/Users/jin/Desktop/x-spam-filter-lsposed	task-p2c-constructor-probe
+2026-08-21 16:03:42	codex	gpt-5.6-sol	EXEC_DONE	-	-	201759	-	/Users/jin/Desktop/x-spam-filter-lsposed	task-p2d-real-filter
