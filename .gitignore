@@ -1,0 +1,6 @@
+orchestra/evidence/
+orchestra/.lock/
+orchestra/.done
+orchestra/.codex-status
+orchestra/.codex-last.md
+orchestra/.baseline
