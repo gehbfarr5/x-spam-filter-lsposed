@@ -59,6 +59,55 @@ RedReader/TikTok 项目的教训：混淆名会随版本轮换，必须先反编
 3. 非琐碎决策先给 ≥2 方案对比（本任务书已要求 P0 产出方案对比）。
 4. 不确定就去反编译/查文档核实，不凭记忆或猜测硬编码。
 
+## P1（用户已确认，2026-08-21）：工程骨架 + 探测模块
+
+**产品决策补充**：关键词范围用户已确认"184 条全部照收，接受误伤风险"，不做人工筛选/分区域
+词表。技术方案用户已确认采用方案 A（Hook 数据模型/JSON 解析层）。
+
+### P1 目标
+不直接写真正的过滤逻辑。先建工程骨架 + 一个**只打日志、不做任何拦截**的探测模块，
+在真机上挂到 `architecture-proposal.md` 方案 A 涉及的候选类上，验证：
+1. 时间线主页/搜索/评论区/通知这四个场景，运行时实际各自触发的是新模型层
+   （`com.x.models.timelines.items.Urt*`，kotlinx.serialization）还是旧模型层
+   （`com.twitter.model.json.timeline.urt.Json*`，LoganSquare），或者两者都有。
+2. 找到"entries 列表已经解析完成、即将交给 UI 层"的精确注入点（类名+方法签名）。
+
+候选挂载点（来自 `recon-x-app.md`，须先用 jadx 反编译确认在当前真机版本 12.17.0 dex 里
+的精确方法签名，不能直接照抄本报告里的旧版本推断）：
+- 新模型层：`com.x.models.timelines.items.UrtTimelinePost` 的构造函数/`getText()`
+  实际指向的 `com.x.models.PostResult.getText()`。
+- 旧模型层：`com.twitter.model.json.timeline.urt.JsonTimelineEntry.r()`（把 JSON 转成
+  内部业务对象的统一入口）、`com.twitter.model.json.timeline.urt.JsonAddEntriesInstruction.r()`。
+
+探测模块要求：
+- hook 上述候选方法，`XposedBridge.log` 打印：命中的类全名、方法签名、拿到的正文文本前
+  50 字符、以及从堆栈或参数能获取到的"当前是哪个页面/请求"的线索（如果实在拿不到页面来源，
+  至少要能通过"用户手动切换到某个页面再操作"配合日志时间戳人工关联）。
+- **绝不修改任何返回值/绝不移除任何数据**，纯观察，避免探测阶段把 App 弄崩或产生难以判断
+  是探测代码问题还是过滤逻辑问题的混淆结果。
+- 找不到目标类/方法时必须 log 报错并让该 hook 明确失效（不允许吞异常）。
+
+### 工程骨架
+- 参照 `~/Desktop/redreader-ai-translate-xposed/` 或
+  `~/Desktop/doubao-letter-longpress-voice/` 的 Gradle/AGP/`api-82.jar`/`xposed_init`
+  配置直接复用，不要重新踩一遍 Xposed API 依赖、AGP 版本这些坑。
+- 包名建议 `dev.xspamfilter.lsposed`（或类似，避免和 x-spam-filter 浏览器扩展的包名/命名空间
+  混淆），`xposedscope` 填 `com.twitter.android`。
+- README 需要说明这是探测阶段（P1 probe），不是最终发布版本，避免用户或未来协作者误装到生产。
+
+### P1 验收标准（探测阶段，不是最终功能验收）
+1. `./gradlew assembleDebug` 构建成功产出 APK。
+2. 真机（PLK110 / 3B166Q00SX000000）能安装、LSPosed 里能启用、scope 正确限定
+   `com.twitter.android`。
+3. orchestrator 手动操作四个场景后，`/data/adb/lspd/log/` 或
+   `XposedBridge.log`（视 vector 桥日志落点）里能看到探测日志，日志内容足以回答上面
+   "P1 目标"的两个问题。
+4. 产出 `orchestra/probe-findings.md`，写清楚四个场景各自命中的类/方法，供下一阶段
+   （真正的过滤逻辑实现）直接引用，不需要重新反编译。
+
+**P1 完成、探测结论明确后，才进入 P2：写真正的关键词过滤 hook（在探测确认的精确注入点上
+实现"命中关键词则从 entries 列表移除该条目"），P2 任务书到时候再补。**
+
 ## 已知经验（供后续阶段参考，避免重复踩坑）
 - declaredFields/declaredMethods 不含继承成员，注意类层级。
 - RecyclerView cell 复用场景下，绑定数据要按当前 bound 内容实时判断，
