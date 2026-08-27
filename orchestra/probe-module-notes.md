@@ -167,7 +167,7 @@
   Android SDK 36 `android.jar` 与 `app/libs/api-82.jar` 通过 Java 17 `javac`；orchestrator 仍需在
   沙箱外运行原始 `./gradlew assembleDebug` 验收。
 
-## P2 X App 12.19.1 R8 类名重新分配（2026-08-27）
+## P3 X App 12.19.1 R8 类名重新分配（2026-08-27）
 
 - X App 从 12.17.0 升级到 12.19.1 后，R8 混淆产物重新分配了类名：主时间线 Compose
   lambda 从 `com.x.urt.ui.k0` 变为 `com.x.urt.ui.n0`，最后一个构造参数类型从
@@ -175,3 +175,24 @@
   接口及其余参数顺序保持不变。
 - 本次只替换了 `HookEntry.java` 中对应的字符串常量及相关日志文案，过滤器、Proxy、
   构造函数解析和整体架构均未改变。
+
+### 真机验收（orchestrator 直接执行，2026-08-27）
+
+- `./gradlew assembleDebug` 沙箱外构建成功。
+- 真机（PLK110 / 3B166Q00SX000000，WiFi ADB）重装后模块 `enabled`，scope 正确限定
+  `com.twitter.android`；强杀重启后日志确认
+  `hook installed exact constructor: com.x.urt.ui.n0(...)`，不再出现
+  `ClassNotFoundException: com$x$performance$i`。
+- 四个场景逐一在真机上操作并用日志核实同一个 hook 点均被触发：
+  - 主时间线（切换"正在关注" tab 触发 Compose 重建）：`original=28 kept=27 removed=1`——
+    生产 184 词表在真实时间线内容上命中了一条，端到端证明过滤链路真实生效
+    （不是靠人工注入测试词，是生产词表的真实命中）。
+  - 搜索结果页（搜索 "news"）：`original=14`/`original=21` 均被过滤器处理。
+  - 通知页：`original=6`/`original=5` 被过滤器处理。
+  - 评论区/回复列表（点开一条推文详情页）：过滤器同样触发。
+- 稳定性：全程 X App 进程未崩溃（pid 存活），本轮会话日志里除了历史遗留、非致命的
+  探测型 hook（`PostResult#getText()`、`UrtTimelinePost` 构造函数探测——这些是早期
+  P2 阶段已经证明的死路径，保留作负面证据，不影响生产过滤器）以外，没有新增
+  FAILED/异常。
+- 结论：修复完整生效，四场景恢复正常，架构未变，只是 R8 混淆产物类名跟随版本号
+  重新定位。
