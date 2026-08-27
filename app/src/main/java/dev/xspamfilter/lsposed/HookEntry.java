@@ -88,7 +88,7 @@ public final class HookEntry implements IXposedHookZygoteInit, IXposedHookLoadPa
             "kotlin.jvm.functions.Function3",
             "kotlin.jvm.functions.Function1",
             "kotlin.jvm.functions.Function2",
-            "com.x.performance.i"
+            "com.x.performance.g"
     };
 
     @Override
@@ -141,7 +141,7 @@ public final class HookEntry implements IXposedHookZygoteInit, IXposedHookLoadPa
                 "com.twitter.model.json.timeline.urt.JsonAddEntriesInstruction#r()",
                 () -> hookJsonAddEntriesInstruction(lpparam.classLoader));
         installRequiredFilter(
-                "com.x.urt.ui.k0 main-feed immutable List constructor argument",
+                "com.x.urt.ui.n0 main-feed immutable List constructor argument",
                 () -> hookMainFeedListFilter(lpparam.classLoader));
     }
 
@@ -150,7 +150,7 @@ public final class HookEntry implements IXposedHookZygoteInit, IXposedHookLoadPa
         Class<?> mainFeedLambdaClass = null;
 
         try {
-            mainFeedLambdaClass = XposedHelpers.findClass("com.x.urt.ui.k0", classLoader);
+            mainFeedLambdaClass = XposedHelpers.findClass("com.x.urt.ui.n0", classLoader);
             Class<?>[] parameterTypes = resolveConstructorParameterTypes(
                     MAIN_FEED_LAMBDA_CONSTRUCTOR_PARAMETER_TYPES,
                     classLoader);
@@ -179,7 +179,7 @@ public final class HookEntry implements IXposedHookZygoteInit, IXposedHookLoadPa
                             MAIN_FEED_LAMBDA_CONSTRUCTOR_PARAMETER_TYPES));
         } catch (Throwable throwable) {
             XposedBridge.log(
-                    FILTER_TAG + " FAILED to install exact com.x.urt.ui.k0 constructor hook");
+                    FILTER_TAG + " FAILED to install exact com.x.urt.ui.n0 constructor hook");
             XposedBridge.log(
                     FILTER_TAG + " expected parameter types="
                             + formatParameterTypeNames(
@@ -203,25 +203,25 @@ public final class HookEntry implements IXposedHookZygoteInit, IXposedHookLoadPa
                 try {
                     if (param.args == null || param.args.length != 12) {
                         throw new IllegalStateException(
-                                "com.x.urt.ui.k0 constructor expected 12 arguments but received "
+                                "com.x.urt.ui.n0 constructor expected 12 arguments but received "
                                         + (param.args == null ? "<null>" : param.args.length));
                     }
 
                     Object originalObject = param.args[2];
                     if (originalObject == null) {
                         throw new IllegalStateException(
-                                "com.x.urt.ui.k0 constructor argument 2 was null");
+                                "com.x.urt.ui.n0 constructor argument 2 was null");
                     }
                     if (!immutableListInterfaceClass.isInstance(originalObject)) {
                         throw new IllegalStateException(
-                                "com.x.urt.ui.k0 constructor argument 2 expected "
+                                "com.x.urt.ui.n0 constructor argument 2 expected "
                                         + immutableListInterfaceClass.getName()
                                         + " but was "
                                         + originalObject.getClass().getName());
                     }
                     if (!(originalObject instanceof List<?>)) {
                         throw new IllegalStateException(
-                                "com.x.urt.ui.k0 constructor argument 2 implements "
+                                "com.x.urt.ui.n0 constructor argument 2 implements "
                                         + immutableListInterfaceClass.getName()
                                         + " but not java.util.List");
                     }
@@ -276,7 +276,7 @@ public final class HookEntry implements IXposedHookZygoteInit, IXposedHookLoadPa
                                     + removed);
                 } catch (Throwable throwable) {
                     XposedBridge.log(
-                            FILTER_TAG + " callback FAILED before com.x.urt.ui.k0 constructor; "
+                            FILTER_TAG + " callback FAILED before com.x.urt.ui.n0 constructor; "
                                     + "refusing to continue with the unfiltered list");
                     logThrowable(FILTER_TAG, throwable);
                     param.setThrowable(

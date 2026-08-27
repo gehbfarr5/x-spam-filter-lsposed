@@ -166,3 +166,12 @@
   诚实声称 `assembleDebug` 通过。作为不执行测试的编译核验，当前完整 `HookEntry.java` 已用
   Android SDK 36 `android.jar` 与 `app/libs/api-82.jar` 通过 Java 17 `javac`；orchestrator 仍需在
   沙箱外运行原始 `./gradlew assembleDebug` 验收。
+
+## P2 X App 12.19.1 R8 类名重新分配（2026-08-27）
+
+- X App 从 12.17.0 升级到 12.19.1 后，R8 混淆产物重新分配了类名：主时间线 Compose
+  lambda 从 `com.x.urt.ui.k0` 变为 `com.x.urt.ui.n0`，最后一个构造参数类型从
+  `com.x.performance.i` 变为 `com.x.performance.g`；`kotlinx.collections.immutable.c`
+  接口及其余参数顺序保持不变。
+- 本次只替换了 `HookEntry.java` 中对应的字符串常量及相关日志文案，过滤器、Proxy、
+  构造函数解析和整体架构均未改变。
