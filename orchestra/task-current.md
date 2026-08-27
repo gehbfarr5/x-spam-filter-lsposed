@@ -108,6 +108,31 @@ RedReader/TikTok 项目的教训：混淆名会随版本轮换，必须先反编
 **P1 完成、探测结论明确后，才进入 P2：写真正的关键词过滤 hook（在探测确认的精确注入点上
 实现"命中关键词则从 entries 列表移除该条目"），P2 任务书到时候再补。**
 
+## P3（2026-08-27）：X App 更新到 12.19.1 后的 hook 点修复
+
+P2 完成并全场景验证通过后（见 `probe-findings.md`），X App 从 12.17.0 自动升级到
+**12.19.1-release.0** (versionCode 312191000)，模块 fail-loud 报错失效。真机日志
+定位到根因：R8 混淆产物类名 `com.x.urt.ui.k0` 在新构建里被重新分配给了另一个
+无关的 2 参数类，同时 `com.x.performance.i` 类型消失。orchestrator 已直接拉取
+真机现装的新版 base.apk，用 baksmali 重新定位到新类 `com.x.urt.ui.n0`
+（架构、其余 11 个构造参数类型、`kotlinx.collections.immutable.c` 接口名均未变，
+仅 `com.x.performance.i`→`com.x.performance.g`），详见
+`orchestra/task-p3-app-update-fix.md`。
+
+本轮判档：**省额度档**（`gpt-5.6-luna`·high）——证据已经精确到"改哪个文件的哪两个
+字符串"，属于"明确琐碎小改"，不需要 sol·xhigh 的重逆向/重设计投入。Verifier 仍用
+Sonnet + 真机四场景回归验证（不因为改动小就降低验收标准）。
+
+### P3 验收标准
+1. `./gradlew assembleDebug` 构建成功。
+2. 真机重装/重启 X App 后，`/data/adb/lspd/log/` 里不再出现
+   `FAILED to install exact com.x.urt.ui.* constructor hook`，能看到
+   `hook installed exact constructor: com.x.urt.ui.n0(...)` 和
+   `main-feed list filtered: original=N kept=N removed=N` 日志。
+3. 用受控测试关键词在四个场景（主时间线/搜索/通知/评论区）里各验证一次命中后
+   完全移除，然后恢复生产 184 词表，确认正常内容不受影响、无崩溃。
+4. `orchestra/probe-module-notes.md` 追加本次版本升级+修复记录。
+
 ## 已知经验（供后续阶段参考，避免重复踩坑）
 - declaredFields/declaredMethods 不含继承成员，注意类层级。
 - RecyclerView cell 复用场景下，绑定数据要按当前 bound 内容实时判断，

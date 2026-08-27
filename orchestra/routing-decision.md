@@ -37,3 +37,34 @@ jadx 产物，可以另外派一次"只读文件、不碰 adb"的 Codex 任务�
 - jadx 反编译产物体积大，不进 git；只把关键代码片段摘录进 `recon-x-app.md`。
 - P0 结束（架构方案定稿）前，不写任何 hook 代码，不建 GitHub 远程仓库的正式
   release 内容（本地 git repo 可以先建，远程仓库何时创建视用户确认节奏而定）。
+
+---
+
+# Routing Decision — P3 X App 更新修复（2026-08-27）
+
+## ① 判档理由
+**省额度档** → `codex -m gpt-5.6-luna`，推理强度 `high`。
+
+- X App 12.17.0→12.19.1 升级导致 hook 点混淆产物类名重新分配（`k0`→`n0`，
+  `com.x.performance.i`→`com.x.performance.g`），orchestrator 已经用 baksmali
+  在真机现装的新版 APK 上逐字段核实完毕，证据精确到"改哪个常量数组的第几个
+  元素、改成什么值"，不存在需要 Codex 自己判断/设计的空间。
+- 属于 ROUTING 四档表里"明确琐碎小改"的典型场景：改动面窄（一个文件、两处
+  字符串常量）、无架构决策、无新增依赖、有确定性证据支撑，用 sol·xhigh 反而
+  是浪费额度。
+- 降档不降验收标准：这是全项目唯一的真正过滤 hook，Verifier 仍要求真机四场景
+  （主时间线/搜索/通知/评论区）用受控关键词完整回归，而不是只看构建通过。
+
+## ② 研究外包决策
+**不外包** —— 定位新类名需要读本地 adb 拉取的 APK + baksmali 反汇编产物，
+这类"本地二进制/smali 逐字节核实"不是 github-solution-research（找现成方案/
+issue）或 orch-research.sh（广义 web 调研）能覆盖的任务形态，且已经由
+orchestrator 直接用真机日志错误信息 + baksmali 定位完成，不需要再起一轮调研。
+
+## ③ 安全与边界
+- 真机操作（拉取新版 APK、后续验证四场景）仍由 orchestrator 直接执行，不进
+  Codex 沙箱，遵循 MOBILE_ROUTING.md 硬约束。
+- 新版 APK（`orchestra/evidence/x-new-*.apk`）、解包 dex、baksmali 产物体积大，
+  不进 git，只把关键证据摘录进任务书和 `probe-module-notes.md`。
+- Codex 本轮任务边界严格限定为字符串常量替换，任务书已明确要求不改动
+  `FilteredImmutableListHandler`/Proxy 逻辑、不加"双类名兼容"之类的过度设计。
