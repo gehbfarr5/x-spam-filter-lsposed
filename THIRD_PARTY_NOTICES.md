@@ -11,3 +11,13 @@
 - 许可证：Apache License 2.0（全文见 `third_party/zpvip-x-spam-filter/LICENSE`）
 - 未修改，原样固化；如后续增删词条会在此另行说明并标注修改。
 - 本项目与 ZPVIP/x-spam-filter 原作者无关联，不代表其对本项目的背书。
+
+## 可选社区词库来源
+
+- 来源：[amahteru/x-comment-blocker](https://github.com/amahteru/x-comment-blocker)
+- 使用范围：应用内仅下载并解析 `keywords.txt` 的“常规屏蔽词”类别；仇恨用语和用户名类别
+  默认不导入。
+- 许可证：MIT（全文见 `third_party/x-comment-blocker/LICENSE`）
+- 更新方式：候选内容先做大小、格式和正则兼容性检查；不兼容项在界面明确列出，用户确认后
+  才激活有效规则。
+- 本项目不下载或执行该仓库中的 JavaScript 代码，也不代表原作者对本项目的背书。

@@ -1,5 +1,7 @@
 package dev.xspamfilter.lsposed;
 
+import android.app.Application;
+import android.content.Context;
 import android.content.res.AssetManager;
 import android.content.res.XModuleResources;
 
@@ -119,6 +121,10 @@ public final class HookEntry implements IXposedHookZygoteInit, IXposedHookLoadPa
 
         XposedBridge.log(TAG + " loading into " + lpparam.packageName);
 
+        installRequiredFilter(
+                "android.app.Application#attach(Context) dynamic-rule bridge",
+                () -> hookApplicationAttach());
+
         installProbe(
                 "com.x.models.PostResult#getText()",
                 () -> hookPostResultGetText(lpparam.classLoader));
@@ -147,6 +153,7 @@ public final class HookEntry implements IXposedHookZygoteInit, IXposedHookLoadPa
 
     private static void hookMainFeedListFilter(ClassLoader classLoader) throws Throwable {
         List<String> keywords = getOrLoadNormalizedKeywords();
+        DynamicRuleBridge.installPackagedBootstrap(keywords);
         Class<?> mainFeedLambdaClass = null;
 
         try {
@@ -162,6 +169,10 @@ public final class HookEntry implements IXposedHookZygoteInit, IXposedHookLoadPa
                     timelinePostClass,
                     "getText",
                     String.class);
+            Method getEntryIdMethod = requirePublicNoArgMethod(
+                    timelinePostClass,
+                    "getEntryId",
+                    String.class);
             Constructor<?> constructor = mainFeedLambdaClass.getDeclaredConstructor(parameterTypes);
 
             XposedBridge.hookMethod(
@@ -171,7 +182,7 @@ public final class HookEntry implements IXposedHookZygoteInit, IXposedHookLoadPa
                             immutableListInterfaceClass,
                             timelinePostClass,
                             getTextMethod,
-                            keywords));
+                            getEntryIdMethod));
             XposedBridge.log(
                     FILTER_TAG + " hook installed exact constructor: "
                             + mainFeedLambdaClass.getName()
@@ -196,7 +207,7 @@ public final class HookEntry implements IXposedHookZygoteInit, IXposedHookLoadPa
             Class<?> immutableListInterfaceClass,
             Class<?> timelinePostClass,
             Method getTextMethod,
-            List<String> keywords) {
+            Method getEntryIdMethod) {
         return new XC_MethodHook() {
             @Override
             protected void beforeHookedMethod(MethodHookParam param) {
@@ -247,10 +258,27 @@ public final class HookEntry implements IXposedHookZygoteInit, IXposedHookLoadPa
                                             + " instead of java.lang.String");
                         }
 
-                        String normalizedText = normalizeForKeywordMatch((String) textResult);
-                        if (containsKeyword(normalizedText, keywords)) {
+                        DynamicRuleBridge.Match match = DynamicRuleBridge.firstMatch((String) textResult);
+                        if (match != null) {
+                            Object entryIdResult = XposedBridge.invokeOriginalMethod(
+                                    getEntryIdMethod,
+                                    item,
+                                    new Object[0]);
                             removed++;
+                            DynamicRuleBridge.recordBlock(
+                                    match,
+                                    entryIdResult == null ? null : String.valueOf(entryIdResult),
+                                    (String) textResult);
                         } else {
+                            if (DynamicRuleBridge.isDiagnosticActive()) {
+                                Object entryIdResult = XposedBridge.invokeOriginalMethod(
+                                        getEntryIdMethod,
+                                        item,
+                                        new Object[0]);
+                                DynamicRuleBridge.recordUnmatched(
+                                        entryIdResult == null ? null : String.valueOf(entryIdResult),
+                                        (String) textResult);
+                            }
                             filteredList.add(item);
                         }
                     }
@@ -286,6 +314,24 @@ public final class HookEntry implements IXposedHookZygoteInit, IXposedHookLoadPa
                 }
             }
         };
+    }
+
+    private static void hookApplicationAttach() {
+        XposedHelpers.findAndHookMethod(
+                Application.class,
+                "attach",
+                Context.class,
+                new XC_MethodHook() {
+                    @Override
+                    protected void afterHookedMethod(MethodHookParam param) {
+                        Object baseContext = param.args[0];
+                        if (!(baseContext instanceof Context)) {
+                            throw new IllegalStateException(
+                                    "Application.attach did not receive an Android Context");
+                        }
+                        DynamicRuleBridge.initialize((Context) baseContext);
+                    }
+                });
     }
 
     private static Object createImmutableListProxy(
@@ -373,7 +419,7 @@ public final class HookEntry implements IXposedHookZygoteInit, IXposedHookLoadPa
         }
     }
 
-    private static String normalizeForKeywordMatch(String value) {
+    static String normalizeForRuleMatch(String value) {
         if (value == null || value.isEmpty()) {
             return "";
         }
@@ -391,6 +437,10 @@ public final class HookEntry implements IXposedHookZygoteInit, IXposedHookLoadPa
             normalized.appendCodePoint(codePoint);
         }
         return normalized.toString();
+    }
+
+    private static String normalizeForKeywordMatch(String value) {
+        return normalizeForRuleMatch(value);
     }
 
     private static boolean containsKeyword(String normalizedText, List<String> keywords) {

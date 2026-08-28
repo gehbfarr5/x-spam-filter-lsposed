@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">X Spam Filter Probe</string>
-    <string name="xposed_description">P1 probe for X timeline model paths. Logs observations only and never filters data.</string>
+    <string name="app_name">X Spam Filter</string>
+    <string name="xposed_description">使用可更新的混合规则，在内容渲染前过滤 X 垃圾回复。</string>
 </resources>
